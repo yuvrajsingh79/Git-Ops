@@ -16,18 +16,27 @@ import (
 
 //GetGitDetails functions returns the top most popular repositories of an organisation based on number of forks
 func GetGitDetails(w http.ResponseWriter, r *http.Request) {
-	//here we are usiing Authorization technique for demonstration purpose to validate the token
+	//here we are usiing github access token for authenticating the api request
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "No Authorization token found")
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	// tokenString := r.Header.Get("Authorization")
 	org := r.URL.Query().Get("Org")
 	numRepos, err := strconv.Atoi(r.URL.Query().Get("n"))
 	numCommittees, err := strconv.Atoi(r.URL.Query().Get("m"))
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "bf415b189bccf29163c3cf0678c58a9a82e703ff"},
+		&oauth2.Token{AccessToken: tokenString},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
+	if client == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	// list public repositories for org "github"
 	opt := &github.RepositoryListByOrgOptions{
@@ -37,6 +46,10 @@ func GetGitDetails(w http.ResponseWriter, r *http.Request) {
 
 	//fetching the top n most popular list of repositories of a given organisation
 	repos, _, err := client.Repositories.ListByOrg(ctx, org, opt)
+	if repos == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	if _, ok := err.(*github.AcceptedError); ok {
 		log.Println("scheduled on GitHub side")
 	}
@@ -79,4 +92,5 @@ func GetGitDetails(w http.ResponseWriter, r *http.Request) {
 	}
 	result.Repo = reposit
 	json.NewEncoder(w).Encode(&reposit)
+	return
 }
