@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: almabase
+  name: almabase
+spec:
+  containers:
+  - image: syuvraj/almabase:v1
+    imagePullPolicy: IfNotPresent
+    name: almabase
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
